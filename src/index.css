@@ -1,0 +1,180 @@
+:root, [data-theme="light"] {
+  --bg-color: #f3f3f3;
+  --surface-color: #ffffff;
+  --text-color: #1a1a1a;
+  --border-color: #d1d1d1;
+  --primary-color: #0067c0;
+  --primary-hover: #005a9e;
+  --secondary-bg: #e1e1e1;
+  --secondary-hover: #d0d0d0;
+  --input-bg: #ffffff;
+  --input-border: #8c8c8c;
+  --danger-color: #c42b1c;
+  --success-color: #0f7b0f;
+  --border-radius: 6px;
+  --font-family: "Yu Gothic UI", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+}
+
+
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family) !important;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-size: 14px;
+  overflow: hidden; /* App feels more native */
+}
+
+input, button, select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+button {
+  background-color: var(--secondary-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 6px 16px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: background-color 0.1s, transform 0.1s;
+}
+
+button:hover {
+  background-color: var(--secondary-hover);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+button.primary {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: transparent;
+}
+
+button.primary:hover {
+  background-color: var(--primary-hover);
+}
+
+input[type="text"], input[type="number"], input[type="date"], input[type="password"] {
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  caret-color: var(--text-color);
+  border: 1px solid var(--input-border);
+  border-radius: var(--border-radius);
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color 0.1s;
+  user-select: text !important;
+  pointer-events: auto !important;
+}
+
+.invoice-container input {
+  caret-color: black !important;
+}
+
+input:focus {
+  border-color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 5px; /* Offset the 2px border */
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 6px;
+  border: 3px solid var(--bg-color);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* Watermark */
+.watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+  width: 60%;
+  max-width: 600px;
+}
+
+.hover-title:hover {
+  opacity: 0.8;
+}
+
+/* Fix text color in print pages since background is explicitly white */
+.print-page, .print-page input, .print-page table, .print-page td, .print-page th, .print-page select {
+  color: black !important;
+}
+
+/* Force block layout during printing to enable native page breaking */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+.pdf-only {
+  display: none !important;
+}
+
+body.pdf-exporting .pdf-only {
+  display: flex !important;
+}
+
+@media print {
+  .print-page {
+    display: block !important;
+    height: auto !important;
+  }
+  .print-page > div {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 10px !important;
+  }
+}
+
+.pdf-exporting .print-page {
+  display: block !important;
+  height: auto !important;
+}
+.pdf-exporting .print-page > div {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  margin-bottom: 10px !important;
+}
+
+/* Horizontal lines for better editing visibility, hidden on print/pdf */
+.invoice-data-row td {
+  border-bottom: 1px solid rgba(0,0,0,0.15) !important;
+}
+
+.pdf-exporting .invoice-data-row td {
+  border-bottom: none !important;
+}
+
+@media print {
+  .invoice-data-row td {
+    border-bottom: none !important;
+  }
+}
+@media print { .print-page { width: 210mm !important; max-width: none !important; } }

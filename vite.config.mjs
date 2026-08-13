@@ -1,0 +1,21 @@
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import electron from 'vite-plugin-electron';
+
+
+export default defineConfig({
+  plugins: [
+    react(),
+    electron([
+      {
+        entry: ['electron/main.js', 'electron/database.js'],
+      },
+      {
+        entry: 'electron/preload.js',
+        onstart(options) {
+          options.reload()
+        },
+      },
+    ]),
+  ],
+});
