@@ -1,7 +1,7 @@
 {
   "name": "outstanding-bills",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/kesav-prasad/outstanding-bills.git"
@@ -11,6 +11,7 @@
     "dev": "vite",
     "build": "vite build && electron-builder",
     "build:win": "vite build && electron-builder -w --x64",
+    "release:win": "vite build && electron-builder -w --x64 --publish always",
     "lint": "oxlint",
     "preview": "vite preview"
   },
