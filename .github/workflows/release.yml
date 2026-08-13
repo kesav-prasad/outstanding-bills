@@ -26,16 +26,7 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Build App
+      - name: Build and Publish App
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:win
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: release/*.exe
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
