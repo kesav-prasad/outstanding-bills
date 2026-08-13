@@ -27,6 +27,8 @@ jobs:
         run: npm install
 
       - name: Build App
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:win
 
       - name: Create GitHub Release
