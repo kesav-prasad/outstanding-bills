@@ -26,6 +26,12 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Cleanup previous duplicate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete-asset v1.0.3 "Outstanding.Bills.Setup.1.0.3.exe" -y -R kesav-prasad/outstanding-bills || true
+
       - name: Build and Publish App
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
