@@ -122,7 +122,7 @@ export default function History({ onNavigate }) {
               <th style={{ padding: '12px', textAlign: 'left' }}>Details</th>
               <th style={{ padding: '12px', textAlign: 'right' }}>Purchase (Rs)</th>
               <th style={{ padding: '12px', textAlign: 'right' }}>Deposit (Rs)</th>
-              {filters.customerId && <th style={{ padding: '12px', textAlign: 'right' }}>Outstanding (Rs)</th>}
+              <th style={{ padding: '12px', textAlign: 'right' }}>Outstanding (Rs)</th>
               <th style={{ padding: '12px', textAlign: 'center' }}>Action</th>
             </tr>
           </thead>
@@ -143,11 +143,9 @@ export default function History({ onNavigate }) {
                 <td style={{ padding: '12px', textAlign: 'right' }}>
                   {h.deposit_amount > 0 ? h.deposit_amount.toFixed(2) : ''}
                 </td>
-                {filters.customerId && (
-                  <td style={{ padding: '12px', textAlign: 'right', fontWeight: 'bold' }}>
-                    {h.outstanding !== undefined ? h.outstanding.toFixed(2) : ''}
-                  </td>
-                )}
+                <td style={{ padding: '12px', textAlign: 'right', fontWeight: 'bold' }}>
+                  {h.outstanding !== null && h.outstanding !== undefined ? h.outstanding.toFixed(2) : ''}
+                </td>
                 <td style={{ padding: '12px', textAlign: 'center' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
                     {h.receipt && (
@@ -164,7 +162,7 @@ export default function History({ onNavigate }) {
             ))}
             {history.length === 0 && (
               <tr>
-                <td colSpan={filters.customerId ? "8" : "7"} style={{ padding: '30px', textAlign: 'center', color: '#6b7280' }}>
+                <td colSpan="8" style={{ padding: '30px', textAlign: 'center', color: '#6b7280' }}>
                   No transactions found matching your filters.
                 </td>
               </tr>

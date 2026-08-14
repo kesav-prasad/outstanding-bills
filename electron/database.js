@@ -276,39 +276,55 @@ function getHistory(customerId, typeFilter, startDate, endDate) {
   const stmt = db.prepare(finalQuery);
   const rows = stmt.all(...params);
 
-  // If a specific customer is filtered, calculate the outstanding balance
-  if (customerId) {
-    let openingBalance = 0;
-    if (startDate) {
-      const obQuery = `
-        SELECT
-               IFNULL((SELECT SUM(amount) FROM Purchases WHERE customer_id = ? AND date < ?), 0) - 
-               IFNULL((SELECT SUM(amount) FROM Deposits WHERE customer_id = ? AND date < ?), 0) AS opening_balance
-      `;
-      const obStmt = db.prepare(obQuery);
-      const obRow = obStmt.get(customerId, startDate, customerId, startDate);
-      openingBalance = obRow ? obRow.opening_balance : 0;
+  // Always calculate outstanding balance for each customer independently
+  let openingBalances = {};
+  if (startDate) {
+    const obQuery = `
+      SELECT c.id, c.name,
+             IFNULL((SELECT SUM(amount) FROM Purchases WHERE customer_id = c.id AND date < ?), 0) - 
+             IFNULL((SELECT SUM(amount) FROM Deposits WHERE customer_id = c.id AND date < ?), 0) AS opening_balance
+      FROM Customers c
+      WHERE 1=1
+      ${customerId ? 'AND c.id = ?' : ''}
+    `;
+    const obParams = customerId ? [startDate, startDate, customerId] : [startDate, startDate];
+    const obStmt = db.prepare(obQuery);
+    const obRows = obStmt.all(...obParams);
+    for (const r of obRows) {
+      openingBalances[r.name] = r.opening_balance;
     }
+  }
 
-    let runningBalance = openingBalance;
-    const rowsWithBalance = [];
-    for (const row of rows) {
-      if (row.type === 'Purchase') {
-        runningBalance += row.purchase_amount;
-      } else if (row.type === 'Deposit') {
-        runningBalance -= row.deposit_amount;
+  let runningBalances = {};
+  const rowsWithBalance = [];
+  for (const row of rows) {
+    if (row.customer_name && row.customer_name !== 'N/A') {
+      const cName = row.customer_name;
+      if (runningBalances[cName] === undefined) {
+        runningBalances[cName] = openingBalances[cName] || 0;
       }
+      
+      if (row.type === 'Purchase') {
+        runningBalances[cName] += row.purchase_amount;
+      } else if (row.type === 'Deposit') {
+        runningBalances[cName] -= row.deposit_amount;
+      }
+      
       rowsWithBalance.push({
         ...row,
-        outstanding: runningBalance
+        outstanding: runningBalances[cName]
+      });
+    } else {
+      // Expenses have no running balance
+      rowsWithBalance.push({
+        ...row,
+        outstanding: null
       });
     }
-    // Return history in descending order for the UI
-    return rowsWithBalance.reverse();
-  } else {
-    // Return history in descending order if no running balance is calculated
-    return rows.reverse();
   }
+  
+  // Return history in descending order for the UI
+  return rowsWithBalance.reverse();
 }
 
 function deleteTransaction(type, id) {

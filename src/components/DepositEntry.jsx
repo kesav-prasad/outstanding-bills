@@ -9,6 +9,7 @@ export default function DepositEntry({ onNavigate }) {
     account_no: '',
     mode: 'Cash',
     other_mode: '',
+    bank_transfer_type: 'NEFT',
     txn_no: '',
     amount: '',
     receipt: null
@@ -55,7 +56,12 @@ export default function DepositEntry({ onNavigate }) {
       return;
     }
 
-    const finalMode = formData.mode === 'Other' ? formData.other_mode : formData.mode;
+    let finalMode = formData.mode;
+    if (formData.mode === 'Other') {
+      finalMode = formData.other_mode;
+    } else if (formData.mode === 'Bank Transfer') {
+      finalMode = `Bank Transfer - ${formData.bank_transfer_type}`;
+    }
     
     await window.api.addDeposit(
       formData.customer_id, 
@@ -132,6 +138,23 @@ export default function DepositEntry({ onNavigate }) {
               <option value="Other">Other</option>
             </select>
           </div>
+
+          {formData.mode === 'Bank Transfer' && (
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Transfer Type *</label>
+              <select 
+                value={formData.bank_transfer_type}
+                onChange={e => setFormData({...formData, bank_transfer_type: e.target.value})}
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
+                required
+              >
+                <option value="NEFT">NEFT</option>
+                <option value="RTGS">RTGS</option>
+                <option value="CDM">CDM</option>
+                <option value="ACCOUNT TRANSFER">ACCOUNT TRANSFER</option>
+              </select>
+            </div>
+          )}
 
           {formData.mode === 'Other' && (
             <div>
