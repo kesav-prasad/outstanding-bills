@@ -11,7 +11,10 @@ export default function ExpenseEntry({ onNavigate }) {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.amount || isNaN(formData.amount)) return alert('Please enter a valid amount.');
+    if (!formData.amount || isNaN(formData.amount)) {
+      await window.api.showMessageBox({ type: 'warning', title: 'Validation Error', message: 'Please enter a valid amount.' });
+      return;
+    }
 
     await window.api.addExpense(
       formData.date, 
@@ -19,7 +22,7 @@ export default function ExpenseEntry({ onNavigate }) {
       formData.details, 
       parseFloat(formData.amount)
     );
-    alert('Expense saved successfully!');
+    await window.api.showMessageBox({ type: 'info', title: 'Success', message: 'Expense saved successfully!' });
     onNavigate('home');
   };
 

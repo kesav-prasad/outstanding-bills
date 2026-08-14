@@ -57,8 +57,8 @@ app.whenReady().then(() => {
   ipcMain.handle('update-customer', (e, id, name, acc, info) => dbAPI.updateCustomer(id, name, acc, info));
   ipcMain.handle('delete-customer', (e, id) => dbAPI.deleteCustomer(id));
 
-  ipcMain.handle('add-purchase', (e, cid, date, details, amt) => dbAPI.addPurchase(cid, date, details, amt));
-  ipcMain.handle('add-deposit', (e, cid, date, acc, mode, txn, amt) => dbAPI.addDeposit(cid, date, acc, mode, txn, amt));
+  ipcMain.handle('add-purchase', (e, cid, date, details, amt, receipt) => dbAPI.addPurchase(cid, date, details, amt, receipt));
+  ipcMain.handle('add-deposit', (e, cid, date, acc, mode, txn, amt, receipt) => dbAPI.addDeposit(cid, date, acc, mode, txn, amt, receipt));
   
   ipcMain.handle('add-expense', (e, date, name, details, amt) => dbAPI.addExpense(date, name, details, amt));
   ipcMain.handle('get-expenses', (e, start, end) => dbAPI.getExpenses(start, end));
@@ -101,6 +101,10 @@ app.whenReady().then(() => {
     } catch (err) {
       return { success: false, error: err.message };
     }
+  });
+
+  ipcMain.handle('show-message-box', async (event, options) => {
+    return await dialog.showMessageBox(mainWindow, options);
   });
 
 

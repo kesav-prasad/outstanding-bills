@@ -8,7 +8,8 @@ export default function PurchaseEntry({ onNavigate }) {
     customer_id: '',
     account_no: '',
     details: '',
-    amount: ''
+    amount: '',
+    receipt: null
   });
 
   useEffect(() => {
@@ -25,13 +26,35 @@ export default function PurchaseEntry({ onNavigate }) {
     });
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        window.api.showMessageBox({ type: 'warning', title: 'File too large', message: 'Please upload a receipt smaller than 2MB.' });
+        e.target.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({ ...formData, receipt: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.customer_id) return alert('Please select a customer.');
-    if (!formData.amount || isNaN(formData.amount)) return alert('Please enter a valid amount.');
+    if (!formData.customer_id) {
+      await window.api.showMessageBox({ type: 'warning', title: 'Validation Error', message: 'Please select a customer.' });
+      return;
+    }
+    if (!formData.amount || isNaN(formData.amount)) {
+      await window.api.showMessageBox({ type: 'warning', title: 'Validation Error', message: 'Please enter a valid amount.' });
+      return;
+    }
 
-    await window.api.addPurchase(formData.customer_id, formData.date, formData.details, parseFloat(formData.amount));
-    alert('Purchase saved successfully!');
+    await window.api.addPurchase(formData.customer_id, formData.date, formData.details, parseFloat(formData.amount), formData.receipt);
+    await window.api.showMessageBox({ type: 'info', title: 'Success', message: 'Purchase saved successfully!' });
     onNavigate('home');
   };
 
@@ -104,6 +127,17 @@ export default function PurchaseEntry({ onNavigate }) {
               style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db' }}
               required
             />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Upload Receipt (Optional)</label>
+            <input 
+              type="file" 
+              accept="image/*,application/pdf"
+              onChange={handleFileChange}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', backgroundColor: 'white' }}
+            />
+            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '5px' }}>Max file size: 2MB. Supports images and PDFs.</div>
           </div>
 
           <button type="submit" style={{ background: '#3b82f6', color: 'white', padding: '12px 20px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginTop: '10px' }}>

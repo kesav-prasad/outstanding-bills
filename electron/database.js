@@ -44,6 +44,19 @@ function initDatabase(dbPath) {
       amount REAL
     );
   `);
+
+  // Migrate tables to include 'receipt' column for images/PDFs if it doesn't exist
+  try {
+    db.exec("ALTER TABLE Purchases ADD COLUMN receipt TEXT");
+  } catch (e) {
+    // Column already exists, ignore
+  }
+
+  try {
+    db.exec("ALTER TABLE Deposits ADD COLUMN receipt TEXT");
+  } catch (e) {
+    // Column already exists, ignore
+  }
   
   // Enable foreign keys
   db.pragma('foreign_keys = ON');
@@ -85,16 +98,16 @@ function getCustomers() {
 }
 
 // --- PURCHASES ---
-function addPurchase(customer_id, date, details, amount) {
-  const stmt = db.prepare('INSERT INTO Purchases (customer_id, date, details, amount) VALUES (?, ?, ?, ?)');
-  const info = stmt.run(customer_id, date, details, amount);
+function addPurchase(customer_id, date, details, amount, receipt) {
+  const stmt = db.prepare('INSERT INTO Purchases (customer_id, date, details, amount, receipt) VALUES (?, ?, ?, ?, ?)');
+  const info = stmt.run(customer_id, date, details, amount, receipt || null);
   return info.lastInsertRowid;
 }
 
 // --- DEPOSITS ---
-function addDeposit(customer_id, date, account_no, mode, txn_no, amount) {
-  const stmt = db.prepare('INSERT INTO Deposits (customer_id, date, account_no, mode, txn_no, amount) VALUES (?, ?, ?, ?, ?, ?)');
-  const info = stmt.run(customer_id, date, account_no, mode, txn_no, amount);
+function addDeposit(customer_id, date, account_no, mode, txn_no, amount, receipt) {
+  const stmt = db.prepare('INSERT INTO Deposits (customer_id, date, account_no, mode, txn_no, amount, receipt) VALUES (?, ?, ?, ?, ?, ?, ?)');
+  const info = stmt.run(customer_id, date, account_no, mode, txn_no, amount, receipt || null);
   return info.lastInsertRowid;
 }
 
@@ -222,7 +235,7 @@ function getHistory(customerId, typeFilter, startDate, endDate) {
   let params = [];
 
   const addPurchases = () => {
-    let q = `SELECT 'Purchase' as type, p.id, p.date, c.name as customer_name, p.customer_id, p.details as description, p.amount 
+    let q = `SELECT 'Purchase' as type, p.id, p.date, c.name as customer_name, p.customer_id, p.details as description, p.amount as purchase_amount, 0 as deposit_amount, 0 as expense_amount, p.receipt 
              FROM Purchases p JOIN Customers c ON p.customer_id = c.id WHERE 1=1`;
     if (customerId) { q += ' AND p.customer_id = ?'; params.push(customerId); }
     if (startDate) { q += ' AND p.date >= ?'; params.push(startDate); }
@@ -231,7 +244,7 @@ function getHistory(customerId, typeFilter, startDate, endDate) {
   };
 
   const addDeposits = () => {
-    let q = `SELECT 'Deposit' as type, d.id, d.date, c.name as customer_name, d.customer_id, d.mode || ' - ' || d.txn_no as description, d.amount 
+    let q = `SELECT 'Deposit' as type, d.id, d.date, c.name as customer_name, d.customer_id, d.mode || ' - ' || d.txn_no as description, 0 as purchase_amount, d.amount as deposit_amount, 0 as expense_amount, d.receipt 
              FROM Deposits d JOIN Customers c ON d.customer_id = c.id WHERE 1=1`;
     if (customerId) { q += ' AND d.customer_id = ?'; params.push(customerId); }
     if (startDate) { q += ' AND d.date >= ?'; params.push(startDate); }
@@ -240,7 +253,7 @@ function getHistory(customerId, typeFilter, startDate, endDate) {
   };
 
   const addExpenses = () => {
-    let q = `SELECT 'Expense' as type, e.id, e.date, 'N/A' as customer_name, NULL as customer_id, e.name || ' - ' || e.details as description, e.amount 
+    let q = `SELECT 'Expense' as type, e.id, e.date, 'N/A' as customer_name, NULL as customer_id, e.name || ' - ' || e.details as description, 0 as purchase_amount, 0 as deposit_amount, e.amount as expense_amount, NULL as receipt 
              FROM Expenses e WHERE 1=1`;
     if (customerId) { q += ' AND 1=0'; /* Expenses don't have customers */ }
     if (startDate) { q += ' AND e.date >= ?'; params.push(startDate); }
@@ -259,9 +272,43 @@ function getHistory(customerId, typeFilter, startDate, endDate) {
 
   if (queries.length === 0) return [];
 
-  const finalQuery = queries.join(' UNION ALL ') + ' ORDER BY 3 DESC, 2 DESC'; // date(3), id(2)
+  const finalQuery = queries.join(' UNION ALL ') + ' ORDER BY 3 ASC, 2 ASC'; // order by date ASC, id ASC to calculate running balance accurately
   const stmt = db.prepare(finalQuery);
-  return stmt.all(...params);
+  const rows = stmt.all(...params);
+
+  // If a specific customer is filtered, calculate the outstanding balance
+  if (customerId) {
+    let openingBalance = 0;
+    if (startDate) {
+      const obQuery = `
+        SELECT
+               IFNULL((SELECT SUM(amount) FROM Purchases WHERE customer_id = ? AND date < ?), 0) - 
+               IFNULL((SELECT SUM(amount) FROM Deposits WHERE customer_id = ? AND date < ?), 0) AS opening_balance
+      `;
+      const obStmt = db.prepare(obQuery);
+      const obRow = obStmt.get(customerId, startDate, customerId, startDate);
+      openingBalance = obRow ? obRow.opening_balance : 0;
+    }
+
+    let runningBalance = openingBalance;
+    const rowsWithBalance = [];
+    for (const row of rows) {
+      if (row.type === 'Purchase') {
+        runningBalance += row.purchase_amount;
+      } else if (row.type === 'Deposit') {
+        runningBalance -= row.deposit_amount;
+      }
+      rowsWithBalance.push({
+        ...row,
+        outstanding: runningBalance
+      });
+    }
+    // Return history in descending order for the UI
+    return rowsWithBalance.reverse();
+  } else {
+    // Return history in descending order if no running balance is calculated
+    return rows.reverse();
+  }
 }
 
 function deleteTransaction(type, id) {

@@ -19,7 +19,10 @@ export default function ManageCustomer({ onNavigate }) {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) return alert('Name is required');
+    if (!formData.name.trim()) {
+      await window.api.showMessageBox({ type: 'warning', title: 'Validation Error', message: 'Name is required' });
+      return;
+    }
 
     if (editId) {
       await window.api.updateCustomer(editId, formData.name, formData.account_no, formData.contact_info);
@@ -28,7 +31,7 @@ export default function ManageCustomer({ onNavigate }) {
         await window.api.addCustomer(formData.name, formData.account_no, formData.contact_info);
       } catch (err) {
         if (err.message.includes('UNIQUE constraint failed')) {
-          alert('Customer name must be unique.');
+          await window.api.showMessageBox({ type: 'error', title: 'Error', message: 'Customer name must be unique.' });
           return;
         }
       }
